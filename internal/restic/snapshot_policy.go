@@ -256,6 +256,7 @@ func ApplyPolicy(list Snapshots, p ExpirePolicy) (keep, remove Snapshots, reason
 	tnow := time.Now()
 
 	for nr, cur := range list {
+		var cleanOutWithin [5]bool = [5]bool{false, false, false, false, false}
 		var keepSnap bool
 		var keepSnapReasons []string
 
@@ -298,6 +299,8 @@ func ApplyPolicy(list Snapshots, p ExpirePolicy) (keep, remove Snapshots, reason
 					debug.Log("keep %v, time %v, ID %v, bucker %v\n", b.reason, cur.Time, cur.id.Str(), i)
 					keepSnap = true
 					keepSnapReasons = append(keepSnapReasons, fmt.Sprintf("%v %v", b.reason, b.Max))
+				} else {
+					cleanOutWithin[i] = true
 				}
 			}
 		}
@@ -309,7 +312,7 @@ func ApplyPolicy(list Snapshots, p ExpirePolicy) (keep, remove Snapshots, reason
 
 				if cur.Time.After(t) {
 					val := b.bucker(cur.Time, nr)
-					if val != b.Last {
+					if val != b.Last && !cleanOutWithin[i] {
 						debug.Log("keep %v, time %v, ID %v, bucker %v, val %v %v\n", b.reason, cur.Time, cur.id.Str(), i, val, b.Last)
 						keepSnap = true
 						bucketsWithin[i].Last = val
