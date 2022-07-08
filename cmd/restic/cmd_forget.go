@@ -44,6 +44,11 @@ type ForgetOptions struct {
 	Weekly        int
 	Monthly       int
 	Yearly        int
+	MaxHourly     restic.Duration
+	MaxDaily      restic.Duration
+	MaxWeekly     restic.Duration
+	MaxMonthly    restic.Duration
+	MaxYearly     restic.Duration
 	Within        restic.Duration
 	WithinHourly  restic.Duration
 	WithinDaily   restic.Duration
@@ -75,6 +80,11 @@ func init() {
 	f.IntVarP(&forgetOptions.Weekly, "keep-weekly", "w", 0, "keep the last `n` weekly snapshots")
 	f.IntVarP(&forgetOptions.Monthly, "keep-monthly", "m", 0, "keep the last `n` monthly snapshots")
 	f.IntVarP(&forgetOptions.Yearly, "keep-yearly", "y", 0, "keep the last `n` yearly snapshots")
+	f.VarP(&forgetOptions.MaxHourly, "max-hourly", "", "Only snapshots younger than `duration` can be considered hourly snapshots.")
+	f.VarP(&forgetOptions.MaxDaily, "max-daily", "", "Only snapshots younger than `duration` can be considered daily snapshots.")
+	f.VarP(&forgetOptions.MaxWeekly, "max-weekly", "", "Only snapshots younger than `duration` can be considered weekly snapshots.")
+	f.VarP(&forgetOptions.MaxMonthly, "max-monthly", "", "Only snapshots younger than `duration` can be considered monthly snapshots.")
+	f.VarP(&forgetOptions.MaxYearly, "max-yearly", "", "Only snapshots younger than `duration` can be considered yearly snapshots.")
 	f.VarP(&forgetOptions.Within, "keep-within", "", "keep snapshots that are newer than `duration` (eg. 1y5m7d2h) relative to the latest snapshot")
 	f.VarP(&forgetOptions.WithinHourly, "keep-within-hourly", "", "keep hourly snapshots that are newer than `duration` (eg. 1y5m7d2h) relative to the latest snapshot")
 	f.VarP(&forgetOptions.WithinDaily, "keep-within-daily", "", "keep daily snapshots that are newer than `duration` (eg. 1y5m7d2h) relative to the latest snapshot")
@@ -157,6 +167,11 @@ func runForget(opts ForgetOptions, gopts GlobalOptions, args []string) error {
 			Weekly:        opts.Weekly,
 			Monthly:       opts.Monthly,
 			Yearly:        opts.Yearly,
+			MaxHourly:     opts.MaxHourly,
+			MaxDaily:      opts.MaxDaily,
+			MaxWeekly:     opts.MaxWeekly,
+			MaxMonthly:    opts.MaxMonthly,
+			MaxYearly:     opts.MaxYearly,
 			Within:        opts.Within,
 			WithinHourly:  opts.WithinHourly,
 			WithinDaily:   opts.WithinDaily,

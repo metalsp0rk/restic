@@ -12,12 +12,17 @@ import (
 
 // ExpirePolicy configures which snapshots should be automatically removed.
 type ExpirePolicy struct {
-	Last          int       // keep the last n snapshots
-	Hourly        int       // keep the last n hourly snapshots
-	Daily         int       // keep the last n daily snapshots
-	Weekly        int       // keep the last n weekly snapshots
-	Monthly       int       // keep the last n monthly snapshots
-	Yearly        int       // keep the last n yearly snapshots
+	Last          int // keep the last n snapshots
+	Hourly        int // keep the last n hourly snapshots
+	Daily         int // keep the last n daily snapshots
+	Weekly        int // keep the last n weekly snapshots
+	Monthly       int // keep the last n monthly snapshots
+	Yearly        int // keep the last n yearly snapshots
+	MaxHourly     Duration
+	MaxDaily      Duration
+	MaxWeekly     Duration
+	MaxMonthly    Duration
+	MaxYearly     Duration
 	Within        Duration  // keep snapshots made within this duration
 	WithinHourly  Duration  // keep hourly snapshots made within this duration
 	WithinDaily   Duration  // keep daily snapshots made within this duration
@@ -221,6 +226,18 @@ func ApplyPolicy(list Snapshots, p ExpirePolicy) (keep, remove Snapshots, reason
 		{p.Yearly, y, -1, "yearly snapshot"},
 	}
 
+	var bucketsMax = [5]struct {
+		Max    Duration
+		bucker func(d time.Time, nr int) int
+		reason string
+	}{
+		{p.MaxHourly, ymdh, "hourly max"},
+		{p.MaxDaily, ymd, "daily max"},
+		{p.MaxWeekly, yw, "weekly max"},
+		{p.MaxMonthly, ym, "monthly max"},
+		{p.MaxYearly, y, "yearly max"},
+	}
+
 	// These buckets are for keeping snapshots of given type within duration
 	var bucketsWithin = [5]struct {
 		Within Duration
@@ -236,6 +253,7 @@ func ApplyPolicy(list Snapshots, p ExpirePolicy) (keep, remove Snapshots, reason
 	}
 
 	latest := findLatestTimestamp(list)
+	tnow := time.Now()
 
 	for nr, cur := range list {
 		var keepSnap bool
@@ -268,6 +286,18 @@ func ApplyPolicy(list Snapshots, p ExpirePolicy) (keep, remove Snapshots, reason
 					buckets[i].Last = val
 					buckets[i].Count--
 					keepSnapReasons = append(keepSnapReasons, b.reason)
+				}
+			}
+		}
+
+		for i, b := range bucketsMax {
+			if !b.Max.Zero() {
+				// If the timestamp is in the max range, keep it.  Otherwise, find out if it fits within the extended daily range.
+				t := tnow.AddDate(-b.Max.Years, -b.Max.Months, -b.Max.Days).Add(time.Hour * time.Duration(-b.Max.Hours))
+				if cur.Time.After(t) {
+					debug.Log("keep %v, time %v, ID %v, bucker %v\n", b.reason, cur.Time, cur.id.Str(), i)
+					keepSnap = true
+					keepSnapReasons = append(keepSnapReasons, fmt.Sprintf("%v %v", b.reason, b.Max))
 				}
 			}
 		}
